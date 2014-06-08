@@ -25,9 +25,7 @@ class Scanner(object):
         'if': 'IF',
         'then': 'THEN',
         'else': 'ELSE',
-        'print': 'PRINT',
         'repeat': 'REPEAT',
-        'return': 'RETURN',
         'while': 'WHILE',
         'until': 'UNTIL',
         'for': 'FOR',
@@ -48,10 +46,13 @@ class Scanner(object):
         'and': 'AND',
         'not': 'NOT',
         'file': 'FILE',
-        'of': 'OF'
+        'of': 'OF',
+        'forward': 'FORWARD',
+        'case': 'CASE',
+        'const': 'CONST'
     }
 
-    tokens = ["EQ", "GE", "ID", "LE", "NEQ", "TYPE", "CONSTANT", "ASSIGN"] + list(reserved.values())
+    tokens = ["GE", "ID", "LE", "NEQ", "TYPE", "CONSTANT", "ASSIGN", "DOUBLE_DOT"] + list(reserved.values())
 
     t_ignore = ' \t\f'
 
@@ -86,8 +87,6 @@ class Scanner(object):
 
     t_GE = r">="
 
-    t_EQ = r"="
-
     t_NEQ = r"<>"
 
     t_ASSIGN = r":="
@@ -102,4 +101,6 @@ class Scanner(object):
         return t
   
   
-  
+    def t_DOUBLE_DOT(self, t):
+        r"\.\."
+        return t
