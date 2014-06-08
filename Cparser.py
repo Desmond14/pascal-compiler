@@ -35,7 +35,7 @@ class Cparser(object):
 
 
     def p_program(self, p):
-        """program : program_header declarations compound_statement"""
+        """program : program_header declarations compound_statement '.'"""
         pass
 
 
@@ -253,7 +253,7 @@ class Cparser(object):
         pass
 
     def p_type_specifier(self, p):
-        """type_specifier : ID
+        """type_specifier : TYPE
                           | '^' type_specifier
                           | '(' id_list ')'
                           | CONSTANT DOUBLE_DOT CONSTANT

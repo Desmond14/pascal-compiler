@@ -19,7 +19,7 @@ class Scanner(object):
         return self.lexer.token()
 
 
-    literals = "{}()<>=;:,+-*/%&|^"
+    literals = "{}()<>=;:,+-*^."
 
     reserved = {
         'if': 'IF',
@@ -80,7 +80,7 @@ class Scanner(object):
 
 
     def t_CONSTANT(self, t):
-        r"(\d+(\.\d*)|\.\d+)|(\d+)|(\"'([^\\\n]|(\\.))*?\')"
+        r"(\d+(\.\d*)|\.\d+)|(\d+)|('(?:[^']+|'')*')"
 
 
     t_LE = r"<="
@@ -99,8 +99,8 @@ class Scanner(object):
         r"[a-zA-Z_]\w*"
         t.type = Scanner.reserved.get(t.value, 'ID')
         return t
-  
-  
+
+
     def t_DOUBLE_DOT(self, t):
         r"\.\."
         return t
