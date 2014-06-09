@@ -81,7 +81,7 @@ class Scanner(object):
 
     def t_CONSTANT(self, t):
         r"(\d+(\.\d*)|\.\d+)|(\d+)|('(?:[^']+|'')*')"
-
+        return t
 
     t_LE = r"<="
 

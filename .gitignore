@@ -24,7 +24,7 @@ parts/
 sdist/
 var/
 *.egg-info/
-.installed.cfg
+.installed.c	fg
 *.egg
 
 # Installer logs
