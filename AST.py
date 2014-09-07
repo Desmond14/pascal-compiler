@@ -7,8 +7,9 @@ class Node(object):
 
 
 class Const(Node):
-    def __init__(self, value):
+    def __init__(self, value, lineno):
         self.value = value
+        self.lineno = lineno
 
 
 class Integer(Const):
@@ -23,6 +24,48 @@ class String(Const):
     pass
 
 
+class ConstDef(Node):
+    def __init__(self, const, ident, lineno):
+        self.const = const
+        self.ident = ident
+        self.lineno = lineno
+
+
+class VarDec(Node):
+    def __init__(self, type_specifier, id_list, lineno):
+        self.type_specifier = type_specifier
+        self.id_list = id_list
+        self.lineno = lineno
+
+
+class Variable(Node):
+    def __init__(self, ident, lineno):
+        self.ident = ident
+        self.lineno = lineno
+
+
+class ProcDec(Node):
+    def __init__(self, header, declarations, body):
+        self.header = header
+        self.declarations = declarations
+        self.body = body
+
+
+class ProcHeader(Node):
+    def __init__(self, ident, arguments, lineno):
+        self.ident = ident
+        self.arguments = arguments
+        self.lineno = lineno
+
+
+class FuncHeader(Node):
+    def __init__(self, ident, arguments, return_type, lineno):
+        self.ident = ident
+        self.arguments = arguments
+        self.return_type = return_type
+        self.lineno = lineno
+
+
 class Statement(Node):
     pass
 
@@ -33,15 +76,24 @@ class CompoundStatement(Statement):
 
 
 class AssignmentStatement(Statement):
-    def __init__(self, variable, expression):
+    def __init__(self, variable, expression, lineno):
         self.variable = variable
         self.expression = expression
+        self.lineno = lineno
 
 
 class ProcedureCall(Statement):
-    def __init__(self, procedure_name, expr_list = None):
+    def __init__(self, procedure_name, expr_list, lineno):
         self.procedure_name = procedure_name
         self.expr_list = expr_list
+        self.lineno = lineno
+
+
+class FunctionCall(Statement):
+    def __init__(self, function_name, expr_list, lineno):
+        self.function_name = function_name
+        self.expr_list = expr_list
+        self.lineno = lineno
 
 
 class ForStatement(Statement):
@@ -60,10 +112,11 @@ class WhileStatement(Statement):
 
 
 class IfStatement(Statement):
-    def __init__(self, condition, if_statement, else_statement = None):
+    def __init__(self, condition, if_statement, else_statement=None):
         self.condition = condition
         self.if_statement = if_statement
         self.else_statement = else_statement
+
 
 class CaseStatement(Statement):
     pass
@@ -80,7 +133,17 @@ class Expression(Node):
 
 
 class BinaryExpression(Expression):
-    pass
+    def __init__(self, left_operand, operator, right_operand, lineno):
+        self.left_operand = left_operand
+        self.right_operand = right_operand
+        self.operator = operator
+        self.lineno = lineno
+
+
+class UnaryExpression(Expression):
+    def __init__(self, operand, operator):
+        self.operand = operand
+        self.operator = operator
 
 
 class Declarations(Node):
@@ -102,3 +165,10 @@ class Program(Node):
         self.program_header = program_header
         self.decls = decls
         self.body = body
+
+
+class Argument(Node):
+    def __init__(self, ident, arg_type, lineno):
+        self.ident = ident
+        self.type = arg_type
+        self.lineno = lineno
