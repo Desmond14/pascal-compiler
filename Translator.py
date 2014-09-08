@@ -30,6 +30,7 @@ class Translator(NodeVisitor):
         self.values_on_stack = 0
         self.cmp_counter = 0
         self.if_counter = 0
+        self.loops_counter = 0
 
     def init_ttype(self):
         res = {}
@@ -226,9 +227,18 @@ class Translator(NodeVisitor):
 
 
     def visit_WhileStatement(self, node, sym_table):
-        #not yet implemented!
+        loop_start = "loops" + str(self.loops_counter)
+        loop_end = "loope" + str(self.loops_counter)
+        self.loops_counter += 1
+
+        self.code.append(loop_start + ":")
         node.condition.accept(self, sym_table)
+        self.code.append("pop ax")
+        self.code.append("cmp ax, 0")
+        self.code.append("jne " + loop_end)
         node.while_body.accept(self, sym_table)
+        self.code.append("jmp " + loop_start)
+        self.code.append(loop_end + ":")
 
 
     def visit_RepeatStatement(self, node, sym_table):
