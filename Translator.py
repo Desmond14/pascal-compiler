@@ -307,6 +307,54 @@ class Translator(NodeVisitor):
             self.code.append("mov ax, 1") #if we didn't jump, it's false
             self.code.append(etiquette + ":")
             self.code.append("push ax")
+        elif node.operator == "<":
+            self.code.append("pop ax")
+            self.code.append("pop bx")
+            self.values_on_stack -= 2
+            self.code.append("cmp ax, bx")
+            self.code.append("mov ax, 0") #assume it will be true
+            etiquette = "af_cmp" + str(self.cmp_counter)
+            self.cmp_counter += 1
+            self.code.append("jl " + etiquette)
+            self.code.append("mov ax, 1") #if we didn't jump, it's false
+            self.code.append(etiquette + ":")
+            self.code.append("push ax")
+        elif node.operator == "=<":
+            self.code.append("pop ax")
+            self.code.append("pop bx")
+            self.values_on_stack -= 2
+            self.code.append("cmp ax, bx")
+            self.code.append("mov ax, 0") #assume it will be true
+            etiquette = "af_cmp" + str(self.cmp_counter)
+            self.cmp_counter += 1
+            self.code.append("jle " + etiquette)
+            self.code.append("mov ax, 1") #if we didn't jump, it's false
+            self.code.append(etiquette + ":")
+            self.code.append("push ax")
+        elif node.operator == "<>":
+            self.code.append("pop ax")
+            self.code.append("pop bx")
+            self.values_on_stack -= 2
+            self.code.append("cmp ax, bx")
+            self.code.append("mov ax, 0") #assume it will be true
+            etiquette = "af_cmp" + str(self.cmp_counter)
+            self.cmp_counter += 1
+            self.code.append("jne " + etiquette)
+            self.code.append("mov ax, 1") #if we didn't jump, it's false
+            self.code.append(etiquette + ":")
+            self.code.append("push ax")
+        elif node.operator == "=":
+            self.code.append("pop ax")
+            self.code.append("pop bx")
+            self.values_on_stack -= 2
+            self.code.append("cmp ax, bx")
+            self.code.append("mov ax, 0") #assume it will be true
+            etiquette = "af_cmp" + str(self.cmp_counter)
+            self.cmp_counter += 1
+            self.code.append("je " + etiquette)
+            self.code.append("mov ax, 1") #if we didn't jump, it's false
+            self.code.append(etiquette + ":")
+            self.code.append("push ax")
 
 
     def visit_Variable(self, node, sym_table):
