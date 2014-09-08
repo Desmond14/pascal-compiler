@@ -28,7 +28,6 @@ class TypeChecker(NodeVisitor):
         self.ttype = self.init_ttype()
         self.correct = True
 
-
     def init_ttype(self):
         res = {}
         for op in ['+', '-', '*', '/']:
@@ -42,17 +41,12 @@ class TypeChecker(NodeVisitor):
         res['*']['string'] = {}
         res['+']['string'] = {}
 
-        for op in ['>', '>=', '<=', '==', '<>', '<']:
+        for op in ['>', '>=', '<=', '=', '<>', '<']:
             res[op] = {}
             res[op]['int'] = {}
             res[op]['int']['int'] = 'bool'
-
-        res['='] = {}
-        res['=']['int'] = {}
-        res['=']['float'] = {}
-        res['=']['int']['int'] = 'int'
-        res['=']['float']['int'] = 'float'
-        res['=']['float']['float'] = 'float'
+            res[op]['float'] = {}
+            res[op]['float']['float'] = 'bool'
 
         return res
 
@@ -71,13 +65,14 @@ class TypeChecker(NodeVisitor):
     def visit_Integer(self, node, sym_table):
         return 'int'
 
+
     def visit_String(self, node, sym_table):
         return 'string'
+
 
     def visit_Float(self, node, sym_table):
         return 'float'
 
-    # ####### NEW CODE ########
 
     def visit_Program(self, node, sym_table):
         #print "Program"
@@ -171,7 +166,6 @@ class TypeChecker(NodeVisitor):
 
     def visit_CompoundStatement(self, node, sym_table):
         for statement in node.statement_list:
-            print type(statement)
             statement.accept(self, sym_table)
 
 

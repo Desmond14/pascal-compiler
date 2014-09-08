@@ -37,6 +37,8 @@ if __name__ == '__main__':
     parser = yacc.yacc(module=Cparser) #(debug = True)
     text = file.read()
     program = parser.parse(text, lexer=Cparser.scanner)
+    if Cparser.error_encountered:
+        exit()
     symbol_table = SymbolTable(None)
     symbol_table.put("print", FunctionSymbol("print", "void", ["int"]))
     type_checker= TypeChecker()

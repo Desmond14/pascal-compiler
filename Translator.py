@@ -251,8 +251,8 @@ class Translator(NodeVisitor):
         before_values_on_stack = self.values_on_stack
         node.right_operand.accept(self, None)
         node.left_operand.accept(self, None)
-        if (before_values_on_stack + 2) != self.values_on_stack:
-            print "Error! More variables on stack than expected in BinaryExpression"
+        # if (before_values_on_stack + 2) != self.values_on_stack:
+        #     print "Error! More variables on stack than expected in BinaryExpression"
 
         if node.operator == "*":
             self.code.append("pop ax")

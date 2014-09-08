@@ -1,5 +1,4 @@
 # !/usr/bin/python
-from _ast import Assign
 from AST import Program, ProgramHeader, Declarations, Integer, Float, ConstDef, String, VarDec, ProcDec, ProcHeader, \
     FuncHeader, Argument, CompoundStatement, AssignmentStatement, ProcedureCall, WhileStatement, IfStatement, \
     BinaryExpression, UnaryExpression, Variable, FunctionCall, RepeatStatement
@@ -131,6 +130,11 @@ class Cparser(object):
             p[1].append(p[2])
             p[0] = p[1]
 
+    # def p_variable_declaration_list_error(self, p):
+    #     """variable_declaration_list : error"""
+    #     print "Bad declaration at line ", p.lineno(1)
+    #     self.error_encountered = True
+
     def p_var_dec(self, p):
         """var_dec : id_list ':' type_specifier ';' """
         p[0] = VarDec(p[3], p[1], p.lineno(3))
@@ -176,6 +180,11 @@ class Cparser(object):
             p[0] = list()
             p[0].append(p[1])
 
+    # def p_argument_list_error(self, p):
+    #     """argument_list : error"""
+    #     print "Syntax error in argument at line ", p.lineno(1)
+    #     self.error_encountered = True
+
     def p_arg(self, p):
         """arg : VAR id_list ':' type_specifier
                | id_list ':' type_specifier """
@@ -196,6 +205,13 @@ class Cparser(object):
     def p_compound_statement(self, p):
         """compound_statement : BEGIN statement_list END"""
         p[0] = CompoundStatement(p[2])
+
+
+    def p_compound_statement_error(self, p):
+        """compound_statement : BEGIN error END"""
+        print "Linia: %d. Blad syntaktyczny w instrukcji zlozonej." % p.lineno(1)
+        self.error_encountered = True
+
 
     def p_statement_list(self, p):
         """statement_list : statement_list ';' statement
@@ -238,6 +254,12 @@ class Cparser(object):
         """while_statement : WHILE expression DO statement"""
         p[0] = WhileStatement(p[2], p[4], p.lineno(1))
 
+
+    def p_while_statement_error(self, p):
+        """while_statement : WHILE error DO statement"""
+        print "Linia: %d. Blad syntaktyczny w w warunku petli while." % p.lineno(1)
+        self.error_encountered = True
+
     def p_if_statement(self, p):
         """if_statement : IF expression THEN statement
                         | IF expression THEN statement ELSE statement"""
@@ -246,27 +268,43 @@ class Cparser(object):
         else:
             p[0] = IfStatement(p.lineno(1), p[2], p[4], p[6])
 
+    def p_if_statement_error(self, p):
+        """if_statement : IF error THEN statement
+                        | IF error THEN statement ELSE statement"""
+        print "Linia: %d. Blad syntaktyczny w warunku instrukcji warunkowej." % p.lineno(1)
+        self.error_encountered = True
+
     def p_repeat_statement(self, p):
         """repeat_statement : REPEAT statement_list UNTIL expression"""
         p[0] = RepeatStatement(p[2], p[3], p.lineno(1))
 
+    def p_repeat_statement_error(self, p):
+        """repeat_statement : REPEAT error UNTIL expression"""
+        print "Linia: %d. Blad syntaktyczny w ciele instrukcji repeat." % p.lineno(1)
+        self.error_encountered = True
+
+
     def p_case_statement(self, p):
         """case_statement : CASE expression OF  case_list END"""
         pass
+
 
     def p_case_list(self, p):
         """case_list : case_list ';' case
                      | case"""
         pass
 
+
     def p_case(self, p):
         """case : constant_list ':' statement"""
         pass
+
 
     def p_constant_list(self, p):
         """constant_list : constant_list ',' CONSTANT
                          | CONSTANT"""
         pass
+
 
     def p_expression(self, p):
         """expression : simple_expression
@@ -281,6 +319,7 @@ class Cparser(object):
             p[0] = p[1]
         else:
             p[0] = BinaryExpression(p[1], p[2], p[3], p.lineno(1))
+
 
     def p_simple_expression(self, p):
         """simple_expression : term
@@ -335,6 +374,11 @@ class Cparser(object):
             p[0] = p[2]
         else:
             p[0] = list()
+
+    def p_actuals_error(self, p):
+        """actuals : '(' error ')' """
+        print "Linia: %d. Blad w liscie argumentow." % (p.lineno(1))
+
 
     def p_expression_list(self, p):
         """expression_list : expression_list ',' expression
