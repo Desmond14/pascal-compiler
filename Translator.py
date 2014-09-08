@@ -242,9 +242,16 @@ class Translator(NodeVisitor):
 
 
     def visit_RepeatStatement(self, node, sym_table):
-        #not yet implemented!
+        loop_start = "loops" + str(self.loops_counter)
+        self.loops_counter += 1
+
+        self.code.append(loop_start + ":")
+        for statement in node.repeat_body:
+            statement.accept(self, sym_table)
         node.condition.accept(self, sym_table)
-        node.repeat_body.accept(self, sym_table)
+        self.code.append("pop ax")
+        self.code.append("cmp ax, 0")
+        self.code.append("jne " + loop_start)
 
 
     def visit_BinaryExpression(self, node, sym_table):

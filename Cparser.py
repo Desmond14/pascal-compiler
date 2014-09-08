@@ -38,6 +38,7 @@ class Cparser(object):
                 return String(value, lineno)
 
     def p_error(self, p):
+        self.error_encountered = True
         if p:
             print("Syntax error at line {0}, column {1}: LexToken({2}, '{3}')".format(p.lineno,
                                                                                       self.scanner.find_tok_column(p),
@@ -276,7 +277,7 @@ class Cparser(object):
 
     def p_repeat_statement(self, p):
         """repeat_statement : REPEAT statement_list UNTIL expression"""
-        p[0] = RepeatStatement(p[2], p[3], p.lineno(1))
+        p[0] = RepeatStatement(p[2], p[4], p.lineno(1))
 
     def p_repeat_statement_error(self, p):
         """repeat_statement : REPEAT error UNTIL expression"""

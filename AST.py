@@ -128,7 +128,7 @@ class RepeatStatement(Statement):
     def __init__(self, repeat_body, condition, lineno):
         self.repeat_body = repeat_body
         self.condition = condition
-        self.lineno
+        self.lineno = lineno
 
 
 class Expression(Node):

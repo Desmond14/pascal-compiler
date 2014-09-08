@@ -239,7 +239,8 @@ class TypeChecker(NodeVisitor):
         condition_type = node.condition.accept(self, sym_table)
         if condition_type != "bool":
             print "Linia: %d. Warunek petli nie jest wartoscia logiczna! Oczekiwano: bool. Otrzymano: %s" % (node.lineno, condition_type)
-        node.repeat_body.accept(self, sym_table)
+        for statement in node.repeat_body:
+            statement.accept(self, sym_table)
 
 
     def visit_BinaryExpression(self, node, sym_table):
