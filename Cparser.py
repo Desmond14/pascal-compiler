@@ -236,19 +236,19 @@ class Cparser(object):
 
     def p_while_statement(self, p):
         """while_statement : WHILE expression DO statement"""
-        p[0] = WhileStatement(p[2], p[4])
+        p[0] = WhileStatement(p[2], p[4], p.lineno(1))
 
     def p_if_statement(self, p):
         """if_statement : IF expression THEN statement
                         | IF expression THEN statement ELSE statement"""
         if len(p) == 5:
-            p[0] = IfStatement(p[2], p[4])
+            p[0] = IfStatement(p.lineno(1), p[2], p[4])
         else:
-            p[0] = IfStatement(p[2], p[4], p[6])
+            p[0] = IfStatement(p.lineno(1), p[2], p[4], p[6])
 
     def p_repeat_statement(self, p):
         """repeat_statement : REPEAT statement_list UNTIL expression"""
-        p[0] = RepeatStatement(p[2], p[3])
+        p[0] = RepeatStatement(p[2], p[3], p.lineno(1))
 
     def p_case_statement(self, p):
         """case_statement : CASE expression OF  case_list END"""

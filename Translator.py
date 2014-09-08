@@ -28,6 +28,8 @@ class Translator(NodeVisitor):
         self.ttype = self.init_ttype()
         self.code = list()
         self.values_on_stack = 0
+        self.cmp_counter = 0
+        self.if_counter = 0
 
     def init_ttype(self):
         res = {}
@@ -190,11 +192,20 @@ class Translator(NodeVisitor):
 
 
     def visit_IfStatement(self, node, sym_table):
-        # not yet implemented!
         node.condition.accept(self, sym_table)
+        self.code.append("pop ax")
+        self.code.append("cmp ax, 0")
+        etiquette = "af_if" + str(self.if_counter)
+        etiquette2 = "af_else" + str(self.if_counter)
+        self.if_counter += 1
+        self.code.append("jne " + etiquette)
         node.if_statement.accept(self, sym_table)
-        if node.else_statement is not None:
+        if node.else_statement:
+            self.code.append("jmp " + etiquette2)
+        self.code.append(etiquette + ":")
+        if node.else_statement:
             node.else_statement.accept(self, sym_table)
+            self.code.append(etiquette2 + ":")
 
 
     def visit_ProcedureCall(self, node, sym_table):
@@ -262,6 +273,30 @@ class Translator(NodeVisitor):
             self.code.append("sub ax, bx")
             self.code.append("push ax")  #push result to stack
             self.values_on_stack += 1
+        elif node.operator == ">":
+            self.code.append("pop ax")
+            self.code.append("pop bx")
+            self.values_on_stack -= 2
+            self.code.append("cmp ax, bx")
+            self.code.append("mov ax, 0") #assume it will be true
+            etiquette = "af_cmp" + str(self.cmp_counter)
+            self.cmp_counter += 1
+            self.code.append("jg " + etiquette)
+            self.code.append("mov ax, 1") #if we didn't jump, it's false
+            self.code.append(etiquette + ":")
+            self.code.append("push ax")
+        elif node.operator == ">=":
+            self.code.append("pop ax")
+            self.code.append("pop bx")
+            self.values_on_stack -= 2
+            self.code.append("cmp ax, bx")
+            self.code.append("mov ax, 0") #assume it will be true
+            etiquette = "af_cmp" + str(self.cmp_counter)
+            self.cmp_counter += 1
+            self.code.append("jge " + etiquette)
+            self.code.append("mov ax, 1") #if we didn't jump, it's false
+            self.code.append(etiquette + ":")
+            self.code.append("push ax")
 
 
     def visit_Variable(self, node, sym_table):

@@ -106,16 +106,18 @@ class ForStatement(Statement):
 
 
 class WhileStatement(Statement):
-    def __init__(self, condition, while_body):
+    def __init__(self, condition, while_body, lineno):
         self.condition = condition
         self.while_body = while_body
+        self.lineno = lineno
 
 
 class IfStatement(Statement):
-    def __init__(self, condition, if_statement, else_statement=None):
+    def __init__(self, lineno, condition, if_statement, else_statement=None):
         self.condition = condition
         self.if_statement = if_statement
         self.else_statement = else_statement
+        self.lineno = lineno
 
 
 class CaseStatement(Statement):
@@ -123,9 +125,10 @@ class CaseStatement(Statement):
 
 
 class RepeatStatement(Statement):
-    def __init__(self, repeat_body, condition):
+    def __init__(self, repeat_body, condition, lineno):
         self.repeat_body = repeat_body
         self.condition = condition
+        self.lineno
 
 
 class Expression(Node):

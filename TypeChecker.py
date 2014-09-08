@@ -40,12 +40,12 @@ class TypeChecker(NodeVisitor):
 
         res['+']['string'] = {}
         res['*']['string'] = {}
-        #res['+']['string']['string'] = 'string'
+        res['+']['string'] = {}
 
         for op in ['>', '>=', '<=', '==', '<>', '<']:
             res[op] = {}
             res[op]['int'] = {}
-            res[op]['int']['int'] = 'int'
+            res[op]['int']['int'] = 'bool'
 
         res['='] = {}
         res['=']['int'] = {}
@@ -192,7 +192,9 @@ class TypeChecker(NodeVisitor):
 
 
     def visit_IfStatement(self, node, sym_table):
-        node.condition.accept(self, sym_table)
+        condition_type = node.condition.accept(self, sym_table)
+        if condition_type != "bool":
+            print "Linia: %d. Warunek instrukcji warunkowej nie jest wartoscia logiczna! Oczekiwano: bool. Otrzymano: %s" % (node.lineno, condition_type)
         node.if_statement.accept(self, sym_table)
         if node.else_statement is not None:
             node.else_statement.accept(self, sym_table)
@@ -233,12 +235,16 @@ class TypeChecker(NodeVisitor):
 
 
     def visit_WhileStatement(self, node, sym_table):
-        node.condition.accept(self, sym_table)
+        condition_type = node.condition.accept(self, sym_table)
+        if condition_type != "bool":
+            print "Linia: %d. Warunek petli nie jest wartoscia logiczna! Oczekiwano: bool. Otrzymano: %s" % (node.lineno, condition_type)
         node.while_body.accept(self, sym_table)
 
 
     def visit_RepeatStatement(self, node, sym_table):
-        node.condition.accept(self, sym_table)
+        condition_type = node.condition.accept(self, sym_table)
+        if condition_type != "bool":
+            print "Linia: %d. Warunek petli nie jest wartoscia logiczna! Oczekiwano: bool. Otrzymano: %s" % (node.lineno, condition_type)
         node.repeat_body.accept(self, sym_table)
 
 
