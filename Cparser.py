@@ -146,17 +146,14 @@ class Cparser(object):
         if len(p) == 1:
             p[0] = list()
         else:
-            p[0] = p[2]
+            p[1].append(p[2])
+            p[0] = p[1]
 
     def p_proc_dec(self, p):
-        """proc_dec : proc_header FORWARD ';'
-                    | proc_header declarations compound_statement ';'
-                    | func_header FORWARD ';'
+        """proc_dec :  proc_header declarations compound_statement ';'
                     | func_header declarations compound_statement ';' """
         if len(p) == 5:
             p[0] = ProcDec(p[1], p[2], p[3])
-            # else ...
-            # TODO: forward declarations
 
     def p_proc_header(self, p):
         """proc_header : PROCEDURE ID arguments ';' """
@@ -169,17 +166,19 @@ class Cparser(object):
     def p_arguments(self, p):
         """arguments : '(' argument_list ')'
                      | """
-        p[0] = p[2]
+        if len(p) == 4:
+            p[0] = p[2]
+        else:
+            p[0] = list()
 
     def p_argument_list(self, p):
         """argument_list : argument_list ';' arg
                          | arg """
         if len(p) == 4:
-            p[1].append(p[3])
+            p[1].extend(p[3])
             p[0] = p[1]
         else:
-            p[0] = list()
-            p[0].append(p[1])
+            p[0] = p[1]
 
     # def p_argument_list_error(self, p):
     #     """argument_list : error"""
@@ -187,21 +186,21 @@ class Cparser(object):
     #     self.error_encountered = True
 
     def p_arg(self, p):
-        """arg : VAR id_list ':' type_specifier
-               | id_list ':' type_specifier """
+        """arg : id_list ':' type_specifier """
         id_list = None
         type_specifier = None
         result = list()
-        if len(p) == 5:
-            id_list = p[2]
-            type_specifier = p[4]
-        else:
-            id_list = p[1]
-            type_specifier = p[3]
+        id_list = p[1]
+        type_specifier = p[3]
+        if type_specifier == "integer":
+            type_specifier = "int"
+        elif type_specifier == "real":
+            type_specifier = "float"
         for id in id_list:
+            #print id
             result.append(Argument(id, type_specifier, p.lineno(1)))
         p[0] = result
-        # TODO: change handling one level up
+
 
     def p_compound_statement(self, p):
         """compound_statement : BEGIN statement_list END"""
@@ -244,7 +243,6 @@ class Cparser(object):
     def p_procedure_call(self, p):
         """procedure_call : ID actuals"""
         p[0] = ProcedureCall(p[1], p[2], p.lineno(1))
-
 
     def p_for_statement(self, p):
         """for_statement : FOR ID ASSIGN expression TO expression DO statement
@@ -368,6 +366,7 @@ class Cparser(object):
         """function_call : ID actuals"""
         p[0] = FunctionCall(p[1], p[2], p.lineno(1))
 
+
     def p_actuals(self, p):
         """actuals : '(' expression_list ')'
                    | '(' ')'"""
@@ -375,6 +374,9 @@ class Cparser(object):
             p[0] = p[2]
         else:
             p[0] = list()
+        for i in p[0]:
+            if isinstance(i, str):
+                print i
 
     def p_actuals_error(self, p):
         """actuals : '(' error ')' """
@@ -388,7 +390,7 @@ class Cparser(object):
             p[0] = list()
             p[0].append(p[1])
         else:
-            p[1].append(p[2])
+            p[1].append(p[3])
             p[0] = p[1]
 
 
@@ -440,7 +442,7 @@ class Cparser(object):
             p[0] = list()
             p[0].append(p[1])
         else:
-            p[1].append(p[2])
+            p[1].append(p[3])
             p[0] = p[1]
 
 

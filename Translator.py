@@ -27,10 +27,14 @@ class Translator(NodeVisitor):
     def __init__(self):
         self.ttype = self.init_ttype()
         self.code = list()
+        self.data_segment = list()
         self.values_on_stack = 0
         self.cmp_counter = 0
         self.if_counter = 0
         self.loops_counter = 0
+        self.procedures_counter = 0
+        self.procedures = {}
+        self.procedure_name = None
 
     def init_ttype(self):
         res = {}
@@ -72,7 +76,7 @@ class Translator(NodeVisitor):
 
 
     def visit_Integer(self, node, sym_table):
-        self.code.append("mov ax, %d" %(node.value))
+        self.code.append("mov ax, %d" % (node.value))
         self.code.append("push ax")
 
     def visit_String(self, node, sym_table):
@@ -85,9 +89,10 @@ class Translator(NodeVisitor):
     def visit_Program(self, node, sym_table):
         self.code.append("code segment")
         self.code.append("assume	cs:code")
-        self.code.append("start:")
+
 
         node.decls.accept(self, None)
+        self.code.append("start:")
         node.body.accept(self, None)
         self.code.append("mov	ax, 4c00h")
         self.code.append("int	21h")
@@ -98,6 +103,9 @@ class Translator(NodeVisitor):
 
     def append_builtin(self):
         self.code.append("print	proc near")
+        self.code.append("pop bx")  #taking off return address
+        self.code.append("pop ax")
+        self.code.append("push bx")
         self.code.append("mov cx, 0")
         self.code.append("mov bx, 10")  # bx sluzy jako podstawa dzielenia
 
@@ -123,14 +131,13 @@ class Translator(NodeVisitor):
 
 
     def visit_Declarations(self, node, sym_table):
-        pass
         # for const_def in node.const_defs:
         # const_def.accept(self, sym_table)
         # #node.type_defs.accept(self, sym_table)
         # for var_decl in node.var_decls:
-        #     var_decl.accept(self, sym_table)
-        # for proc_decl in node.proc_decls:
-        #     proc_decl.accept(self, sym_table)
+        # var_decl.accept(self, sym_table)
+        for proc_decl in node.proc_decls:
+            proc_decl.accept(self, sym_table)
 
 
     def visit_ConstDef(self, node, sym_table):
@@ -142,23 +149,58 @@ class Translator(NodeVisitor):
 
 
     def visit_ProcDec(self, node, sym_table):
-        # not yet implemented!
-        local_sym_table = SymbolTable(sym_table)
-        node.proc_header.accept(self, local_sym_table)
-        for argument in node.declarations:
-            argument.accept(self, local_sym_table)
-        node.body.accept(self, local_sym_table)
+        arguments = node.header.accept(self, sym_table)
+        index = self.procedures_counter
+        self.procedures_counter += 1
+        variables = self.declare_local_variables(node.declarations, node.header.ident, index)
+        self.procedures[node.header.ident] = ProcedureInfo(node.header.ident, index, arguments, variables)
+        self.create_procedure(node.body.statement_list, node.header.ident, index)
+
+
+    def declare_local_variables(self, declarations, ident, index):
+        # only integers supported
+        # simplified implementation
+        variables = list()
+        for declaration in declarations.var_decls:
+            if declaration.type_specifier == "integer":
+                variables.extend(declaration.id_list)
+            else:
+                raise Exception("Variables of type " + declaration.type_specifier + " not supported!")
+        for var in variables:
+            self.data_segment.append(var + " dw ?")
+
+        return variables
+
+    def create_procedure(self, statement_list, proc_name, index):
+        self.procedure_name = proc_name
+        self.code.append(proc_name + " proc near")
+
+        # poping arguments values from stack
+        procedure_info = self.procedures[proc_name]
+        self.code.append("pop bx")
+        for argument in reversed(procedure_info.arguments):
+            self.code.append("pop " + argument)
+        self.code.append("push bx")
+        for statement in statement_list:
+            statement.accept(self, None)
+
+        self.code.append("ret")
+        self.code.append(proc_name + " endp")
+
+        self.procedure_name = None
 
 
     def visit_ProcHeader(self, node, sym_table):
-        # not yet implemented!
-        if sym_table.get(node.ident) is not None:
-            print "Linia: %d. Nazwa procedury %s jest juz w uzyciu."(node.lineno, node.ident)
-        else:
-            arg_types = list()
-            for arg in node.arguments:
-                arg_types.append(arg.accept(self, sym_table))
-            sym_table.put(node.ident, FunctionSymbol(node.ident, "void", arg_types))
+        # only integers supported
+        # simplified implementation
+        args = list()
+        for argument in node.arguments:
+            if argument.type == "int":
+                args.append(argument.ident)
+                self.data_segment.append(argument.ident + " dw ?")
+            else:
+                raise Exception("Argument of type " + argument.type + " not supported!")
+        return args
 
 
     def visit_FuncHeader(self, node, sym_table):
@@ -210,20 +252,29 @@ class Translator(NodeVisitor):
 
 
     def visit_ProcedureCall(self, node, sym_table):
-        # simplified implementation for print, which assumes number to print is in ax
-        #should push current procedure values on stack
-        #currently handles passing only one argument
-        if node.expr_list:
-            node.expr_list[0].accept(self, sym_table)
-            self.code.append("pop ax")
+        if self.procedure_name is not None:
+            procedure_info = self.procedures[self.procedure_name]
+            # push local variables on stack
+            for var in procedure_info.locals:
+                self.code.append("push " + var)
+
+        # pushing arguments values on stack
+        for expr in node.expr_list:
+            expr.accept(self, sym_table)
+
         self.code.append("call " + node.procedure_name)
-        #should pop local procedure values from stack
+
+        if self.procedure_name is not None:
+            procedure_info = self.procedures[self.procedure_name]
+            for var in reversed(procedure_info.locals):
+                self.code.append("pop " + var)
+                #should add function return value handling
 
 
     # def visit_FunctionCall
 
 
-    #def visit_ForStatement(self, node, sym_table):
+    # def visit_ForStatement(self, node, sym_table):
 
 
     def visit_WhileStatement(self, node, sym_table):
@@ -259,7 +310,7 @@ class Translator(NodeVisitor):
         node.right_operand.accept(self, None)
         node.left_operand.accept(self, None)
         # if (before_values_on_stack + 2) != self.values_on_stack:
-        #     print "Error! More variables on stack than expected in BinaryExpression"
+        # print "Error! More variables on stack than expected in BinaryExpression"
 
         if node.operator == "*":
             self.code.append("pop ax")
@@ -295,11 +346,11 @@ class Translator(NodeVisitor):
             self.code.append("pop bx")
             self.values_on_stack -= 2
             self.code.append("cmp ax, bx")
-            self.code.append("mov ax, 0") #assume it will be true
+            self.code.append("mov ax, 0")  #assume it will be true
             etiquette = "af_cmp" + str(self.cmp_counter)
             self.cmp_counter += 1
             self.code.append("jg " + etiquette)
-            self.code.append("mov ax, 1") #if we didn't jump, it's false
+            self.code.append("mov ax, 1")  #if we didn't jump, it's false
             self.code.append(etiquette + ":")
             self.code.append("push ax")
         elif node.operator == ">=":
@@ -307,11 +358,11 @@ class Translator(NodeVisitor):
             self.code.append("pop bx")
             self.values_on_stack -= 2
             self.code.append("cmp ax, bx")
-            self.code.append("mov ax, 0") #assume it will be true
+            self.code.append("mov ax, 0")  #assume it will be true
             etiquette = "af_cmp" + str(self.cmp_counter)
             self.cmp_counter += 1
             self.code.append("jge " + etiquette)
-            self.code.append("mov ax, 1") #if we didn't jump, it's false
+            self.code.append("mov ax, 1")  #if we didn't jump, it's false
             self.code.append(etiquette + ":")
             self.code.append("push ax")
         elif node.operator == "<":
@@ -319,11 +370,11 @@ class Translator(NodeVisitor):
             self.code.append("pop bx")
             self.values_on_stack -= 2
             self.code.append("cmp ax, bx")
-            self.code.append("mov ax, 0") #assume it will be true
+            self.code.append("mov ax, 0")  #assume it will be true
             etiquette = "af_cmp" + str(self.cmp_counter)
             self.cmp_counter += 1
             self.code.append("jl " + etiquette)
-            self.code.append("mov ax, 1") #if we didn't jump, it's false
+            self.code.append("mov ax, 1")  #if we didn't jump, it's false
             self.code.append(etiquette + ":")
             self.code.append("push ax")
         elif node.operator == "=<":
@@ -331,11 +382,11 @@ class Translator(NodeVisitor):
             self.code.append("pop bx")
             self.values_on_stack -= 2
             self.code.append("cmp ax, bx")
-            self.code.append("mov ax, 0") #assume it will be true
+            self.code.append("mov ax, 0")  #assume it will be true
             etiquette = "af_cmp" + str(self.cmp_counter)
             self.cmp_counter += 1
             self.code.append("jle " + etiquette)
-            self.code.append("mov ax, 1") #if we didn't jump, it's false
+            self.code.append("mov ax, 1")  #if we didn't jump, it's false
             self.code.append(etiquette + ":")
             self.code.append("push ax")
         elif node.operator == "<>":
@@ -343,11 +394,11 @@ class Translator(NodeVisitor):
             self.code.append("pop bx")
             self.values_on_stack -= 2
             self.code.append("cmp ax, bx")
-            self.code.append("mov ax, 0") #assume it will be true
+            self.code.append("mov ax, 0")  #assume it will be true
             etiquette = "af_cmp" + str(self.cmp_counter)
             self.cmp_counter += 1
             self.code.append("jne " + etiquette)
-            self.code.append("mov ax, 1") #if we didn't jump, it's false
+            self.code.append("mov ax, 1")  #if we didn't jump, it's false
             self.code.append(etiquette + ":")
             self.code.append("push ax")
         elif node.operator == "=":
@@ -355,11 +406,11 @@ class Translator(NodeVisitor):
             self.code.append("pop bx")
             self.values_on_stack -= 2
             self.code.append("cmp ax, bx")
-            self.code.append("mov ax, 0") #assume it will be true
+            self.code.append("mov ax, 0")  #assume it will be true
             etiquette = "af_cmp" + str(self.cmp_counter)
             self.cmp_counter += 1
             self.code.append("je " + etiquette)
-            self.code.append("mov ax, 1") #if we didn't jump, it's false
+            self.code.append("mov ax, 1")  #if we didn't jump, it's false
             self.code.append(etiquette + ":")
             self.code.append("push ax")
 
@@ -376,4 +427,9 @@ class Translator(NodeVisitor):
             self.values_on_stack += 1
 
 
-
+class ProcedureInfo(object):
+    def __init__(self, name, index, arguments, locals):
+        self.name = name
+        self.index = index
+        self.arguments = arguments
+        self.locals = locals

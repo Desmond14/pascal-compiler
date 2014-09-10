@@ -126,22 +126,22 @@ class TypeChecker(NodeVisitor):
 
 
     def visit_ProcDec(self, node, sym_table):
-        local_sym_table = SymbolTable(sym_table)
-        node.proc_header.accept(self, local_sym_table)
-        for argument in node.declarations:
-            argument.accept(self, local_sym_table)
-        node.body.accept(self, local_sym_table)
-
-
-    def visit_ProcHeader(self, node, sym_table):
-        if sym_table.get(node.ident) is not None:
+        if sym_table.get(node.header.ident) is not None:
             print "Linia: %d. Nazwa procedury %s jest juz w uzyciu."(node.lineno, node.ident)
             self.correct = False
         else:
-            arg_types = list()
-            for arg in node.arguments:
-                arg_types.append(arg.accept(self, sym_table))
-            sym_table.put(node.ident, FunctionSymbol(node.ident, "void", arg_types))
+            #if node.header is ProcHeader
+            local_sym_table = SymbolTable(sym_table)
+            arg_types = node.header.accept(self, local_sym_table)
+            node.declarations.accept(self, local_sym_table)
+            sym_table.put(node.header.ident, FunctionSymbol(node.header.ident, "void", arg_types))
+
+
+    def visit_ProcHeader(self, node, sym_table):
+        arg_types = list()
+        for arg in node.arguments:
+            arg_types.append(arg.accept(self, sym_table))
+        return arg_types
 
 
     def visit_FuncHeader(self, node, sym_table):
@@ -156,12 +156,12 @@ class TypeChecker(NodeVisitor):
 
 
     def visit_Argument(self, node, sym_table):
-         if sym_table.get(node.arg_name) is not None:
+         if sym_table.get(node.ident) is not None:
             print "Linia: %d. Nazwa zmiennej z sygnatury funkcji %s juz w uzyciu!" % (node.lineno, node.arg_name)
             self.correct = False
          else:
-            sym_table.put(node.arg_name, VariableSymbol(node.arg_name, node.arg_type))
-         return node.arg_type
+            sym_table.put(node.ident, VariableSymbol(node.ident, node.type))
+         return node.type
 
 
     def visit_CompoundStatement(self, node, sym_table):
@@ -195,7 +195,7 @@ class TypeChecker(NodeVisitor):
 
 
     def visit_ProcedureCall(self, node, sym_table):
-        if sym_table.get(node.procedure_name) is None:
+        if sym_table.get(node.procedure_name, ) is None:
             print "Linia: %d. Proba wywolania procedury lub funkcji, ktora nie zostala wczesniej zadeklarowana." % node.lineno
             self.correct = False
             return None
@@ -216,7 +216,7 @@ class TypeChecker(NodeVisitor):
             type1 = expr.accept(self, sym_table)
             if type1 != fun_symbol.arg_types[arg_no - 1]:
                 print "Linia: %d. Niezgodny typ dla %d argumentu w wywolaniu funkcji %s." % (
-                node.lineno, arg_no, node.fun_name)
+                node.lineno, arg_no, node.procedure_name)
                 print "Znaleziono: %s. Powinien byc: %s." % (type1, fun_symbol.arg_types[arg_no - 1])
                 self.correct = False
         return fun_symbol.type

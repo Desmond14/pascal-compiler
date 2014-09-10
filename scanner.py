@@ -47,7 +47,7 @@ class Scanner(object):
         'not': 'NOT',
         'file': 'FILE',
         'of': 'OF',
-        'forward': 'FORWARD',
+        #'forward': 'FORWARD',
         'case': 'CASE',
         'const': 'CONST'
     }

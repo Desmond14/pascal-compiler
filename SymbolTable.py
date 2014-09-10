@@ -11,7 +11,6 @@ class FunctionSymbol(Symbol):
 
 
 class VariableSymbol(Symbol):
-
     def __init__(self, name, type):
         Symbol.__init__(self, name, type)
 

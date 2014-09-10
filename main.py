@@ -12,16 +12,19 @@ def append_data_segment(code, symbol_table):
         if isinstance(symbol_table.symbols[symbol], VariableSymbol) and symbol_table.symbols[symbol].type == "int":
             code.append(symbol_table.symbols[symbol].name + " dw ?")
 
-    code.append("data ends")
 
 
-def append_prefix(code):
-    code.append(".model small")
-    code.append(".186")
-    code.append("stos1 segment STACK")
-    code.append("dw	512 dup(?)")
-    code.append("top dw	?")
-    code.append("stos1 ends")
+def print_prefix(file):
+    file.write(".model small" + "\n")
+    file.write(".186"  + "\n")
+    file.write("stos1 segment STACK" + "\n")
+    file.write("dw	512 dup(?)" + "\n")
+    file.write("top dw	?" + "\n")
+    file.write("stos1 ends" + "\n")
+
+
+def append_data_segment_suffix(data_segment):
+    data_segment.append("data ends")
 
 
 if __name__ == '__main__':
@@ -47,10 +50,13 @@ if __name__ == '__main__':
         exit()
 
     translator = Translator()
-    append_prefix(translator.code)
-    append_data_segment(translator.code, symbol_table)
+    append_data_segment(translator.data_segment, symbol_table)
     program.accept(translator, None)
+    append_data_segment_suffix(translator.data_segment)
     with open('result.asm', 'w') as the_file:
+        print_prefix(the_file)
+        for line in translator.data_segment:
+            the_file.write(line + "\n")
         for line in translator.code:
             the_file.write(line + "\n")
 
