@@ -51,13 +51,15 @@ if __name__ == '__main__':
 
     translator = Translator()
     append_data_segment(translator.data_segment, symbol_table)
-    program.accept(translator, None)
-    append_data_segment_suffix(translator.data_segment)
-    with open('result.asm', 'w') as the_file:
-        print_prefix(the_file)
-        for line in translator.data_segment:
-            the_file.write(line + "\n")
-        for line in translator.code:
-            the_file.write(line + "\n")
-
+    try:
+        program.accept(translator, None)
+        append_data_segment_suffix(translator.data_segment)
+        with open('result.asm', 'w') as the_file:
+            print_prefix(the_file)
+            for line in translator.data_segment:
+                the_file.write(line + "\n")
+            for line in translator.code:
+                the_file.write(line + "\n")
+    except Exception as e:
+        print e.message
 

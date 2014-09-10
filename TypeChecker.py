@@ -192,7 +192,7 @@ class TypeChecker(NodeVisitor):
             return None
         elif symbol.type != type1:
             print "Linia: %d. Niezgodnosc typow. Proba przypisania do zmiennej %s typu %s wartosci typu: %s" % (
-                node.lineno, symbol.name, type1, symbol.type)
+                node.lineno, symbol.name, symbol.type, type1)
         else:
             return symbol.type
 

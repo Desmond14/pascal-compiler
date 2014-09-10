@@ -126,6 +126,8 @@ class Translator(NodeVisitor):
         self.code.append("dec cx")
         self.code.append("cmp cx, 0")
         self.code.append("jne printloop")
+        #print newline
+        self.code.append("mov dl, 0Ah\nmov ah, 02h\nint 21h")
         self.code.append("ret")
         self.code.append("print	endp")
 

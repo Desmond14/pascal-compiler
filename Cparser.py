@@ -241,7 +241,7 @@ class Cparser(object):
 
     def p_assignment_statement(self, p):
         """assignment_statement : variable ASSIGN expression"""
-        p[0] = AssignmentStatement(p[1], p[3], p.lineno(1))
+        p[0] = AssignmentStatement(p[1], p[3], p.lineno(2))
 
     def p_procedure_call(self, p):
         """procedure_call : ID actuals"""
@@ -320,7 +320,7 @@ class Cparser(object):
         if len(p) == 2:
             p[0] = p[1]
         else:
-            p[0] = BinaryExpression(p[1], p[2], p[3], p.lineno(1))
+            p[0] = BinaryExpression(p[1], p[2], p[3], p.lineno(2))
 
 
     def p_simple_expression(self, p):
