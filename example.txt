@@ -1,0 +1,41 @@
+program HelloWorld;
+
+var
+  MyAge : integer;
+  MyLen : char;
+  MyHeight: real;
+
+procedure PrintTwice(X : integer; Y : integer);
+var Counter : integer;
+begin
+    if X>Y then
+        print(X)
+    else
+        begin
+        print(Y);
+        PrintTwice(Y, X)
+        end;
+    print(X);
+    PrintTwice := X
+end;
+
+function Try(Z: integer) : integer;
+begin
+    if Z < 5 then begin
+        Z := Z + 1;
+        Z := Try(Z)
+        end;
+    Try := Z + 1
+end;
+
+
+begin
+  MyAge:=1;
+  if MyHeight * MyHeight then
+    MyLen:=3;
+  print(Try(MyAge));
+  MyLen := MyHeight;
+  while (MyAge + 3) do
+    print(MyAge);
+  MyLen := Try(MyHeight)
+end.

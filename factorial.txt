@@ -1,0 +1,21 @@
+program factorial;
+var
+    i: integer;
+
+function fact(n: integer): integer;
+var m :integer;
+begin
+    if (n = 0) then
+        m := 1
+    else
+        m := n * fact(n - 1);
+    fact := m
+end;
+
+begin
+    i := 0;
+    while i < 6 do begin
+        print(fact(i));
+        i := i + 1
+    end
+end.
