@@ -91,7 +91,7 @@ class ProcedureCall(Statement):
 
 class FunctionCall(Statement):
     def __init__(self, function_name, expr_list, lineno):
-        self.function_name = function_name
+        self.procedure_name = function_name
         self.expr_list = expr_list
         self.lineno = lineno
 

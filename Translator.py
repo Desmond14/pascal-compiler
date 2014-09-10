@@ -154,7 +154,10 @@ class Translator(NodeVisitor):
         self.procedures_counter += 1
         variables = self.declare_local_variables(node.declarations, node.header.ident, index)
         self.procedures[node.header.ident] = ProcedureInfo(node.header.ident, index, arguments, variables)
-        self.create_procedure(node.body.statement_list, node.header.ident, index)
+        if (isinstance(node.header, FuncHeader)):
+            self.create_function(node.body.statement_list, node.header.ident, index)
+        else:
+            self.create_procedure(node.body.statement_list, node.header.ident, index)
 
 
     def declare_local_variables(self, declarations, ident, index):
@@ -170,6 +173,27 @@ class Translator(NodeVisitor):
             self.data_segment.append(var + " dw ?")
 
         return variables
+
+    def create_function(self, statement_list, proc_name, index):
+        self.procedure_name = proc_name
+        self.code.append(proc_name + " proc near")
+
+        # poping arguments values from stack
+        procedure_info = self.procedures[proc_name]
+        self.code.append("pop bx")
+        for argument in reversed(procedure_info.arguments):
+            self.code.append("pop " + argument)
+        self.code.append("push bx")
+        for statement in statement_list[:-1]:
+            statement.accept(self, None)
+        self.code.append("pop bx")  #taking off return address
+        statement_list[-1].accept(self, None)
+        self.code.append("push bx")
+
+        self.code.append("ret")
+        self.code.append(proc_name + " endp")
+
+        self.procedure_name = None
 
     def create_procedure(self, statement_list, proc_name, index):
         self.procedure_name = proc_name
@@ -204,14 +228,18 @@ class Translator(NodeVisitor):
 
 
     def visit_FuncHeader(self, node, sym_table):
-        # not yet implemented!
-        if sym_table.get(node.ident) is not None:
-            print "Linia: %d. Nazwa funkcji %s jest juz w uzyciu."(node.lineno, node.ident)
-        else:
-            arg_types = list()
-            for arg in node.arguments:
-                arg_types.append(arg.accept(self, sym_table))
-            sym_table.put(node.ident, FunctionSymbol(node.ident, node.return_type, arg_types))
+        # only integers supported
+        # simplified implementation
+        args = list()
+        for argument in node.arguments:
+            if argument.type == "int":
+                args.append(argument.ident)
+                self.data_segment.append(argument.ident + " dw ?")
+            else:
+                raise Exception("Argument of type " + argument.type + " not supported!")
+        if not node.return_type == "int":
+            raise Exception("Functions returning value of type " + node.return_type + " are not supported!")
+        return args
 
 
     def visit_Argument(self, node, sym_table):
@@ -231,7 +259,10 @@ class Translator(NodeVisitor):
     def visit_AssignmentStatement(self, node, sym_table):
         node.expression.accept(self, None)
         self.code.append("pop ax")  # get expression value to ax
-        self.code.append("mov " + node.variable.ident + ", ax")
+        if node.variable.ident in self.procedures and self.procedure_name == node.variable.ident:
+            self.code.append("push ax")
+        else:
+            self.code.append("mov " + node.variable.ident + ", ax")
 
 
     def visit_IfStatement(self, node, sym_table):
@@ -275,9 +306,31 @@ class Translator(NodeVisitor):
                 #should add function return value handling
 
 
-    # def visit_FunctionCall
+    def visit_FunctionCall(self, node, sym_table):
+        if self.procedure_name is not None:
+            procedure_info = self.procedures[self.procedure_name]
+            # push local variables on stack
+            for var in procedure_info.locals:
+                self.code.append("push " + var)
+            for arg in procedure_info.arguments:
+                self.code.append("push " + arg)
 
+        # pushing arguments values on stack
+        for expr in node.expr_list:
+            expr.accept(self, sym_table)
 
+        self.code.append("call " + node.procedure_name)
+
+        self.code.append("pop bx")
+
+        if self.procedure_name is not None:
+            procedure_info = self.procedures[self.procedure_name]
+            for arg in reversed(procedure_info.arguments):
+                self.code.append("pop " + arg)
+            for var in reversed(procedure_info.locals):
+                self.code.append("pop " + var)
+
+        self.code.append("push bx")
     # def visit_ForStatement(self, node, sym_table):
 
 

@@ -75,7 +75,7 @@ class TypeChecker(NodeVisitor):
 
 
     def visit_Program(self, node, sym_table):
-        #print "Program"
+        # print "Program"
         #program header variables not supported
         node.decls.accept(self, sym_table)
         node.body.accept(self, sym_table)
@@ -84,7 +84,7 @@ class TypeChecker(NodeVisitor):
     def visit_Declarations(self, node, sym_table):
         for const_def in node.const_defs:
             const_def.accept(self, sym_table)
-        #node.type_defs.accept(self, sym_table)
+        # node.type_defs.accept(self, sym_table)
         for var_decl in node.var_decls:
             var_decl.accept(self, sym_table)
         for proc_decl in node.proc_decls:
@@ -93,7 +93,7 @@ class TypeChecker(NodeVisitor):
 
     def visit_ConstDef(self, node, sym_table):
         if sym_table.get(node.ident) is not None:
-            print "Linia %d. Nazwa %s juz w uzyciu!" %(node.lineno, node.ident)
+            print "Linia %d. Nazwa %s juz w uzyciu!" % (node.lineno, node.ident)
             self.correct = False
             return None
 
@@ -115,7 +115,7 @@ class TypeChecker(NodeVisitor):
         else:
             print "Linia: %d. Niedozwolony typ zmiennej: %s" % (node.lineno, node.type_specifier)
             self.correct = False
-            return None  #TODO: think how to handle such situations
+            return None  # TODO: think how to handle such situations
 
         for ident in node.id_list:
             if sym_table.get(ident) is not None:
@@ -130,11 +130,19 @@ class TypeChecker(NodeVisitor):
             print "Linia: %d. Nazwa procedury %s jest juz w uzyciu."(node.lineno, node.ident)
             self.correct = False
         else:
-            #if node.header is ProcHeader
             local_sym_table = SymbolTable(sym_table)
             arg_types = node.header.accept(self, local_sym_table)
             node.declarations.accept(self, local_sym_table)
-            sym_table.put(node.header.ident, FunctionSymbol(node.header.ident, "void", arg_types))
+            if isinstance(node.header, ProcHeader):
+                sym_table.put(node.header.ident, FunctionSymbol(node.header.ident, "void", arg_types))
+            else:
+                sym_table.put(node.header.ident, FunctionSymbol(node.header.ident, node.header.return_type, arg_types))
+                last_statement = node.body.statement_list[-1]
+                if not isinstance(last_statement,
+                                  AssignmentStatement) or last_statement.variable.ident != node.header.ident:
+                    print "Funkcja %s. Ostatnia operacja w funkcji powinno byc zwrocenie wartosci!" % (
+                    node.header.ident)
+                    self.correct = False
 
 
     def visit_ProcHeader(self, node, sym_table):
@@ -145,23 +153,20 @@ class TypeChecker(NodeVisitor):
 
 
     def visit_FuncHeader(self, node, sym_table):
-        if sym_table.get(node.ident) is not None:
-            print "Linia: %d. Nazwa funkcji %s jest juz w uzyciu."(node.lineno, node.ident)
-            self.correct = False
-        else:
-            arg_types = list()
-            for arg in node.arguments:
-                arg_types.append(arg.accept(self, sym_table))
-            sym_table.put(node.ident, FunctionSymbol(node.ident, node.return_type, arg_types))
+        arg_types = list()
+        for arg in node.arguments:
+            arg_types.append(arg.accept(self, sym_table))
+        sym_table.put(node.ident, FunctionSymbol(node.ident, node.return_type, arg_types))
+        return arg_types
 
 
     def visit_Argument(self, node, sym_table):
-         if sym_table.get(node.ident) is not None:
+        if sym_table.get(node.ident) is not None:
             print "Linia: %d. Nazwa zmiennej z sygnatury funkcji %s juz w uzyciu!" % (node.lineno, node.arg_name)
             self.correct = False
-         else:
+        else:
             sym_table.put(node.ident, VariableSymbol(node.ident, node.type))
-         return node.type
+        return node.type
 
 
     def visit_CompoundStatement(self, node, sym_table):
@@ -176,11 +181,18 @@ class TypeChecker(NodeVisitor):
             print "Linia: %d. Przypisanie do nieistniejacej zmiennej - %s!" % (node.lineno, node.var_name)
             self.correct = False
             return None
-        elif symbol.type != type1:
-            print "Linia: %d. Niezgodnosc typow. Proba przypisania typu %s do zmiennej %s o typie %s." % (
-            node.lineno, type1, node.variable.ident, symbol.type)
+        elif isinstance(symbol, FunctionSymbol) and symbol.return_type != type1:
+            print "Linia: %d. Niezgodnosc typow. Proba zwrocenia z funkcji %s wartosci typu %s" % (
+                node.lineno, symbol.name, type1)
             self.correct = False
             return None
+        elif isinstance(symbol, ProcedureCall):
+            print "Linia: %d. Proba zwrocenia wartosci z procedury!"
+            self.correct = False
+            return None
+        elif symbol.type != type1:
+            print "Linia: %d. Niezgodnosc typow. Proba przypisania do zmiennej %s typu %s wartosci typu: %s" % (
+                node.lineno, symbol.name, type1, symbol.type)
         else:
             return symbol.type
 
@@ -188,7 +200,8 @@ class TypeChecker(NodeVisitor):
     def visit_IfStatement(self, node, sym_table):
         condition_type = node.condition.accept(self, sym_table)
         if condition_type != "bool":
-            print "Linia: %d. Warunek instrukcji warunkowej nie jest wartoscia logiczna! Oczekiwano: bool. Otrzymano: %s" % (node.lineno, condition_type)
+            print "Linia: %d. Warunek instrukcji warunkowej nie jest wartoscia logiczna! Oczekiwano: bool. Otrzymano: %s" % (
+            node.lineno, condition_type)
         node.if_statement.accept(self, sym_table)
         if node.else_statement is not None:
             node.else_statement.accept(self, sym_table)
@@ -199,15 +212,14 @@ class TypeChecker(NodeVisitor):
             print "Linia: %d. Proba wywolania procedury lub funkcji, ktora nie zostala wczesniej zadeklarowana." % node.lineno
             self.correct = False
             return None
-        fun_symbol =  sym_table.get(node.procedure_name)
+        fun_symbol = sym_table.get(node.procedure_name)
         if not isinstance(fun_symbol, FunctionSymbol):
             print "Linia: %d. %s nie jest procedura" % (node.lineno, node.procedure_name)
             self.correct = False
             return None
-
         if len(node.expr_list) != len(fun_symbol.arg_types):
             print "Linia: %d. Blad w wywolaniu procedury %s. Liczba argumentow niezgodna z deklaracja!" % (
-            node.lineno, node.procedure_name)
+                node.lineno, node.procedure_name)
             self.correct = False
             return None
         arg_no = 0
@@ -216,29 +228,32 @@ class TypeChecker(NodeVisitor):
             type1 = expr.accept(self, sym_table)
             if type1 != fun_symbol.arg_types[arg_no - 1]:
                 print "Linia: %d. Niezgodny typ dla %d argumentu w wywolaniu funkcji %s." % (
-                node.lineno, arg_no, node.procedure_name)
+                    node.lineno, arg_no, node.procedure_name)
                 print "Znaleziono: %s. Powinien byc: %s." % (type1, fun_symbol.arg_types[arg_no - 1])
                 self.correct = False
         return fun_symbol.type
 
 
-    #def visit_FunctionCall
+    def visit_FunctionCall(self, node, sym_table):
+        return self.visit_ProcedureCall(node, sym_table)
 
 
-    #def visit_ForStatement(self, node, sym_table):
+    # def visit_ForStatement(self, node, sym_table):
 
 
     def visit_WhileStatement(self, node, sym_table):
         condition_type = node.condition.accept(self, sym_table)
         if condition_type != "bool":
-            print "Linia: %d. Warunek petli nie jest wartoscia logiczna! Oczekiwano: bool. Otrzymano: %s" % (node.lineno, condition_type)
+            print "Linia: %d. Warunek petli nie jest wartoscia logiczna! Oczekiwano: bool. Otrzymano: %s" % (
+            node.lineno, condition_type)
         node.while_body.accept(self, sym_table)
 
 
     def visit_RepeatStatement(self, node, sym_table):
         condition_type = node.condition.accept(self, sym_table)
         if condition_type != "bool":
-            print "Linia: %d. Warunek petli nie jest wartoscia logiczna! Oczekiwano: bool. Otrzymano: %s" % (node.lineno, condition_type)
+            print "Linia: %d. Warunek petli nie jest wartoscia logiczna! Oczekiwano: bool. Otrzymano: %s" % (
+            node.lineno, condition_type)
         for statement in node.repeat_body:
             statement.accept(self, sym_table)
 

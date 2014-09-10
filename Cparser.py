@@ -161,7 +161,10 @@ class Cparser(object):
 
     def p_func_header(self, p):
         """func_header : FUNCTION ID arguments ':' type_specifier ';' """
-        p[0] = FuncHeader(p[2], p[3], p[5], p.lineno(1))
+        if p[5] == "integer":
+            p[0] = FuncHeader(p[2], p[3], "int", p.lineno(1))
+        else:
+             p[0] = FuncHeader(p[2], p[3], p[5], p.lineno(1))
 
     def p_arguments(self, p):
         """arguments : '(' argument_list ')'
