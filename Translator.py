@@ -257,6 +257,8 @@ class Translator(NodeVisitor):
             # push local variables on stack
             for var in procedure_info.locals:
                 self.code.append("push " + var)
+            for arg in procedure_info.arguments:
+                self.code.append("push " + arg)
 
         # pushing arguments values on stack
         for expr in node.expr_list:
@@ -266,6 +268,8 @@ class Translator(NodeVisitor):
 
         if self.procedure_name is not None:
             procedure_info = self.procedures[self.procedure_name]
+            for arg in reversed(procedure_info.arguments):
+                self.code.append("pop " + arg)
             for var in reversed(procedure_info.locals):
                 self.code.append("pop " + var)
                 #should add function return value handling
